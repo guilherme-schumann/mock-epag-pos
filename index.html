@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="epag POS Checkout — Interactive mock for Point of Sale payment integration">
+  <title>epag POS Checkout</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ── Checkout Modal ──────────────────────────────────────── -->
+  <div id="checkoutModal"
+       role="dialog"
+       aria-modal="true"
+       aria-label="epag Checkout">
+
+    <!-- Close -->
+    <button id="btnClose" class="btn-close" title="Close checkout" aria-label="Close checkout">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- Left Panel: Cart / Selection Summary -->
+    <div id="panelLeft"
+         class="panel-left"
+         role="complementary"
+         aria-label="Cart summary">
+    </div>
+
+    <!-- Right Panel: Checkout Steps -->
+    <div id="panelRight"
+         class="panel-right"
+         role="main"
+         aria-label="Checkout steps">
+    </div>
+
+  </div><!-- /#checkoutModal -->
+
+  <!-- Scripts (vanilla JS, no external dependencies) -->
+  <script src="js/countries.js"></script>
+  <script src="js/mock-api.js"></script>
+  <script src="js/checkout-ui.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
