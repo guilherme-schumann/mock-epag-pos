@@ -160,9 +160,15 @@ const MockAPI = {
       case 'PICPAY':        return this.processPicPay(payload);
       case 'OXXO':
       case 'EFECTY':
+      case 'PAYCASH':
+      case 'PAYNET':
+      case 'TIENDAS_Y_FARMACIAS':
       case 'PAGO_EFECTIVO': return this.processCashStore(payload);
       case 'SPEI':
-      case 'PSE':           return this.processBankRedirect(payload);
+      case 'PSE':
+      case 'NEQUI':
+      case 'DEUNA':
+      case 'MACH':          return this.processBankRedirect(payload);
       case 'BANK_TRANSFER': return this.processBankTransfer(payload);
       default:              return this.processCashStore(payload);
     }

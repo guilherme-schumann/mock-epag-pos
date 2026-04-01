@@ -11,8 +11,8 @@ const COUNTRIES = [
     currencySymbol: 'R$',
     taxLabel: 'CPF / CNPJ',
     taxPlaceholder: '000.000.000-00',
-    methods: ['PIX', 'BOLETO', 'DEBIT_CARD', 'CREDIT_CARD', 'PICPAY'],
-    fee: 0.0125 // 1.25%
+    methods: ['BOLETO', 'PIX', 'CREDIT_CARD', 'PICPAY', 'DEBIT_CARD'],
+    fee: 0.0125
   },
   {
     code: 'MX',
@@ -22,7 +22,7 @@ const COUNTRIES = [
     currencySymbol: 'MX$',
     taxLabel: 'RFC',
     taxPlaceholder: 'AAAA000000AAA',
-    methods: ['CREDIT_CARD', 'DEBIT_CARD', 'OXXO', 'SPEI'],
+    methods: ['SPEI', 'PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PAYNET', 'TIENDAS_Y_FARMACIAS', 'OXXO'],
     fee: 0.015
   },
   {
@@ -33,19 +33,8 @@ const COUNTRIES = [
     currencySymbol: 'COP',
     taxLabel: 'NIT / Cédula',
     taxPlaceholder: '000000000',
-    methods: ['CREDIT_CARD', 'DEBIT_CARD', 'PSE', 'EFECTY'],
+    methods: ['PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'NEQUI'],
     fee: 0.02
-  },
-  {
-    code: 'PE',
-    name: 'Peru',
-    flag: 'assets/country-flags/Peru.svg',
-    currency: 'PEN',
-    currencySymbol: 'S/',
-    taxLabel: 'DNI / RUC',
-    taxPlaceholder: '00000000',
-    methods: ['CREDIT_CARD', 'DEBIT_CARD', 'PAGO_EFECTIVO', 'BANK_TRANSFER'],
-    fee: 0.015
   },
   {
     code: 'EC',
@@ -55,7 +44,18 @@ const COUNTRIES = [
     currencySymbol: '$',
     taxLabel: 'Cédula / RUC',
     taxPlaceholder: '0000000000',
-    methods: ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER'],
+    methods: ['PAYCASH', 'CREDIT_CARD', 'BANK_TRANSFER', 'DEUNA'],
+    fee: 0.015
+  },
+  {
+    code: 'PE',
+    name: 'Peru',
+    flag: 'assets/country-flags/Peru.svg',
+    currency: 'PEN',
+    currencySymbol: 'S/',
+    taxLabel: 'DNI / RUC',
+    taxPlaceholder: '00000000',
+    methods: ['PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PAGO_EFECTIVO'],
     fee: 0.015
   },
   {
@@ -66,7 +66,7 @@ const COUNTRIES = [
     currencySymbol: 'CLP',
     taxLabel: 'RUT',
     taxPlaceholder: '00.000.000-0',
-    methods: ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER'],
+    methods: ['PAYCASH', 'MACH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER'],
     fee: 0.015
   }
 ];
@@ -149,6 +149,48 @@ const PAYMENT_METHODS = {
     name: 'Bank Transfer',
     icon: 'assets/payment-methods/Bank Transfer.svg',
     formType: 'bank_transfer',
+    cardBrands: []
+  },
+  PAYCASH: {
+    id: 'PAYCASH',
+    name: 'PayCash',
+    icon: 'assets/payment-methods/PayCash.svg',
+    formType: 'cash_store',
+    cardBrands: []
+  },
+  PAYNET: {
+    id: 'PAYNET',
+    name: 'Paynet',
+    icon: 'assets/payment-methods/PayCash.svg',
+    formType: 'cash_store',
+    cardBrands: []
+  },
+  TIENDAS_Y_FARMACIAS: {
+    id: 'TIENDAS_Y_FARMACIAS',
+    name: 'Tiendas y Farmacias',
+    icon: 'assets/payment-methods/Tiendas Y Farmacias.svg',
+    formType: 'cash_store',
+    cardBrands: []
+  },
+  NEQUI: {
+    id: 'NEQUI',
+    name: 'Nequi',
+    icon: 'assets/payment-methods/Nequi.svg',
+    formType: 'bank_redirect',
+    cardBrands: []
+  },
+  DEUNA: {
+    id: 'DEUNA',
+    name: 'Deuna',
+    icon: 'assets/payment-methods/Deuna.svg',
+    formType: 'bank_redirect',
+    cardBrands: []
+  },
+  MACH: {
+    id: 'MACH',
+    name: 'Mach',
+    icon: 'assets/payment-methods/Mach.svg',
+    formType: 'bank_redirect',
     cardBrands: []
   }
 };

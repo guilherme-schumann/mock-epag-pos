@@ -111,10 +111,19 @@ const CheckoutUI = {
     const { step, country, method, cart, selectedCountry } = state;
     const inFormStep = ['form', 'processing', 'payment', 'confirm'].includes(step);
     const el = document.getElementById('panelLeft');
+    const isMobile = window.innerWidth <= 860;
 
-    const countryBadge = selectedCountry
-      ? `<div class="country-badge">${selectedCountry.name} <span class="flag">${this.renderCountryFlag(selectedCountry, 'country-badge-flag')}</span></div>`
-      : '';
+    // On mobile: badge is always a button that opens the country picker
+    const countryBadge = isMobile
+      ? `<button class="country-badge country-badge-btn" data-action="open-country-picker" title="Change country">
+           ${selectedCountry
+             ? `${this.renderCountryFlag(selectedCountry, 'country-badge-flag')} <span>${selectedCountry.name}</span>`
+             : `<span>Select Country</span>`}
+           <svg class="chevron-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+         </button>`
+      : selectedCountry
+        ? `<div class="country-badge">${selectedCountry.name} <span class="flag">${this.renderCountryFlag(selectedCountry, 'country-badge-flag')}</span></div>`
+        : '';
 
     if (inFormStep && selectedCountry) {
       // Summary mode: show selections history
@@ -281,6 +290,13 @@ const CheckoutUI = {
   // ─── Step: Country + Methods Selection ────────────────────────────────────
 
   renderSelectStep(state) {
+    return window.innerWidth <= 860
+      ? this._renderSelectStepMobile(state)
+      : this._renderSelectStepDesktop(state);
+  },
+
+  // Desktop: original flow — full country grid → methods list → Continue button
+  _renderSelectStepDesktop(state) {
     const { selectedCountry, selectedMethod } = state;
     const hasMethod = !!selectedMethod;
     return `
@@ -311,15 +327,134 @@ const CheckoutUI = {
       </div>`;
   },
 
-  // ─── Step: Payment Form ────────────────────────────────────────────────────
+  // Mobile: country via badge overlay; payment methods and form as collapsible steps
+  _renderSelectStepMobile(state) {
+    const { selectedCountry, selectedMethod } = state;
 
-  renderFormStep(state) {
-    const { selectedMethod, selectedCountry, cart } = state;
-    if (!selectedMethod || !selectedCountry) return '';
+    let sections = '';
 
+    if (!selectedCountry) {
+      // No country yet — prompt to tap the badge
+      sections = `
+        <div class="mobile-country-prompt">
+          <p class="mobile-country-prompt-text">Tap <strong>Select Country</strong> above to get started.</p>
+        </div>`;
+    } else if (!selectedMethod) {
+      // Country selected — show payment methods
+      sections = `
+        <div class="checkout-section methods-section" id="methodsSection">
+          <h2 class="section-title">Payment Methods</h2>
+          <p class="section-subtitle">Select the perfect payment method for you:</p>
+          ${this.renderMethodsList(state)}
+        </div>`;
+    } else {
+      // Method selected — collapsed method + payment form
+      sections = `
+        ${this._renderCollapsedMethod(selectedMethod)}
+        <div class="checkout-section payment-section" id="paymentSection">
+          <form id="paymentForm" class="payment-form" novalidate>
+            ${this._buildFormContent(state)}
+          </form>
+        </div>`;
+    }
+
+    return `
+      <div class="right-content">
+        ${sections}
+        <div class="checkout-footer">
+          <p class="terms-text">By proceeding with this checkout, you agree to our
+            <a href="#" class="terms-link">Terms and Conditions.</a>
+          </p>
+          <p class="powered-by">Powered by epag</p>
+        </div>
+      </div>`;
+  },
+
+  // ─── Country Picker Overlay (mobile only) ─────────────────────────────────
+
+  renderCountryPicker(state) {
+    const modal = document.getElementById('checkoutModal');
+    let overlay = document.getElementById('countryPickerOverlay');
+
+    if (!state.countryPickerOpen || window.innerWidth > 860) {
+      if (overlay) overlay.remove();
+      return;
+    }
+
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'countryPickerOverlay';
+      modal.appendChild(overlay);
+    }
+
+    overlay.className = 'country-picker-overlay';
+    overlay.innerHTML = this._buildCountryPickerHTML(state);
+  },
+
+  _buildCountryPickerHTML(state) {
+    const { selectedCountry } = state;
+    const rows = COUNTRIES.map(c => {
+      const methods = c.methods
+        .map(id => PAYMENT_METHODS[id])
+        .filter(Boolean)
+        .map(m => m.name)
+        .join(' · ');
+      const isSelected = selectedCountry && selectedCountry.code === c.code;
+      return `
+        <button class="cpr-row${isSelected ? ' selected' : ''}" data-action="select-country" data-code="${c.code}">
+          <span class="cpr-code">${c.code}</span>
+          <span class="cpr-info">
+            <span class="cpr-name">${c.name}</span>
+            <span class="cpr-methods">${methods}</span>
+          </span>
+          ${isSelected
+            ? `<svg class="cpr-check" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9l4.5 4.5L15 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<span class="cpr-check-placeholder"></span>`}
+        </button>`;
+    }).join('');
+
+    return `
+      <div class="cpr-header">
+        <span class="cpr-title">Select your country</span>
+        <button class="cpr-close" data-action="close-country-picker" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="cpr-list">${rows}</div>`;
+  },
+
+  // ─── Collapsed selectors ───────────────────────────────────────────────────
+
+  _renderCollapsedCountry(country) {
+    const chevron = `<svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    return `
+      <div class="collapsed-selector" data-action="expand-country" role="button" tabindex="0" title="Change country">
+        <div class="collapsed-selector-left">
+          ${this.renderCountryFlag(country, 'collapsed-flag')}
+          <span class="collapsed-selector-name">${country.name}</span>
+        </div>
+        ${chevron}
+      </div>`;
+  },
+
+  _renderCollapsedMethod(method) {
+    const chevron = `<svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    return `
+      <div class="collapsed-selector" data-action="expand-method" role="button" tabindex="0" title="Change payment method">
+        <div class="collapsed-selector-left">
+          <span class="collapsed-method-icon">${this.renderMethodIcon(method)}</span>
+          <span class="collapsed-selector-name">${method.name}</span>
+        </div>
+        ${chevron}
+      </div>`;
+  },
+
+  // ─── Subtotal Box Helper ──────────────────────────────────────────────────
+
+  _subtotalBox(cart, selectedCountry) {
     const fee = cart.subtotal * selectedCountry.fee;
     const total = cart.subtotal + fee;
-    const subtotalHTML = `
+    return `
       <div class="subtotal-box">
         <h3 class="subtotal-title">Sub-total</h3>
         <div class="subtotal-row">
@@ -327,26 +462,36 @@ const CheckoutUI = {
           <span>${cart.subtotal.toFixed(2)} ${selectedCountry.currency}</span>
         </div>
         <div class="subtotal-row">
-          <span>Customer Fee:</span>
+          <span>Customer Fee (${(selectedCountry.fee * 100).toFixed(2)}%):</span>
           <span>${fee.toFixed(2)} ${selectedCountry.currency}</span>
         </div>
         <div class="subtotal-divider"></div>
         <div class="payment-amount-label">Payment Amount</div>
         <div class="payment-amount-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
       </div>`;
+  },
 
-    let formContent = '';
+  // ─── Shared form content builder ──────────────────────────────────────────
+
+  _buildFormContent(state) {
+    const { selectedMethod, selectedCountry, cart } = state;
+    if (!selectedMethod || !selectedCountry) return '';
+
+    const fee = cart.subtotal * selectedCountry.fee;
+    const total = cart.subtotal + fee;
     const ft = selectedMethod.formType;
 
+    const subtotalHTML = this._subtotalBox(cart, selectedCountry);
+
     if (ft === 'pix' || ft === 'boleto' || ft === 'picpay') {
-      formContent = `
+      return `
         ${this._payerFields(selectedCountry)}
         ${subtotalHTML}
         <button type="button" class="btn-primary" data-action="submit-form">
           ${ft === 'pix' ? 'Generate QR Code' : ft === 'boleto' ? 'Generate Boleto' : 'Generate PicPay QR'}
         </button>`;
     } else if (ft === 'card') {
-      formContent = `
+      return `
         ${this._cardFields(selectedMethod)}
         ${this._payerFields(selectedCountry)}
         ${subtotalHTML}
@@ -354,29 +499,36 @@ const CheckoutUI = {
           Pay ${selectedCountry.currencySymbol} ${total.toFixed(2)}
         </button>`;
     } else if (ft === 'cash_store') {
-      formContent = `
+      return `
         ${this._payerFields(selectedCountry)}
         ${subtotalHTML}
         <button type="button" class="btn-primary" data-action="submit-form">Generate Reference</button>`;
     } else if (ft === 'bank_transfer') {
-      formContent = `
+      return `
         ${this._payerFields(selectedCountry)}
         ${subtotalHTML}
         <button type="button" class="btn-primary" data-action="submit-form">Get Bank Details</button>`;
     } else if (ft === 'bank_redirect') {
-      formContent = `
+      return `
         ${this._payerFields(selectedCountry)}
         ${subtotalHTML}
         <button type="button" class="btn-primary" data-action="submit-form">Redirect to Bank</button>`;
     }
+    return '';
+  },
 
+  // ─── Step: Payment Form (fallback for direct 'form' step) ─────────────────
+
+  renderFormStep(state) {
+    const { selectedMethod } = state;
+    if (!selectedMethod) return '';
     return `
       <div class="right-content">
         <div class="form-header">
           <h2 class="form-title">${selectedMethod.name}</h2>
         </div>
         <form id="paymentForm" class="payment-form" novalidate>
-          ${formContent}
+          ${this._buildFormContent(state)}
         </form>
         <div class="checkout-footer">
           <p class="terms-text">By proceeding with this checkout, you agree to our
@@ -509,10 +661,7 @@ const CheckoutUI = {
             <canvas id="qrCanvas" width="220" height="220"></canvas>
           </div>
           <p class="validity-text">Valid until: <strong>${expiryStr}</strong></p>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <div class="form-group">
             <label class="form-label">PIX Code:</label>
             <div class="copy-field-wrap">
@@ -535,10 +684,7 @@ const CheckoutUI = {
             </div>
             <p class="boleto-due">Due date: <strong>${paymentResult.due_date}</strong></p>
           </div>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <div class="form-group">
             <label class="form-label">Barcode:</label>
             <div class="copy-field-wrap">
@@ -559,10 +705,7 @@ const CheckoutUI = {
           <div class="qr-container">
             <canvas id="qrCanvas" width="220" height="220"></canvas>
           </div>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <button class="btn-secondary" data-action="confirm-payment">I already paid</button>
         </div>`;
     } else if (ft === 'cash_store') {
@@ -571,10 +714,7 @@ const CheckoutUI = {
         <div class="payment-result-section">
           <p class="instruction-text">Go to a ${storeName} and provide this reference number:</p>
           <div class="reference-display">${paymentResult.cash_reference}</div>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <div class="form-group">
             <div class="copy-field-wrap">
               <input class="form-input copy-field" type="text" readonly
@@ -593,10 +733,7 @@ const CheckoutUI = {
           ${this.icons.spinner}
           <p class="processing-text">Redirecting to bank...</p>
           <p class="processing-subtext">You are being redirected to your bank's secure payment portal.</p>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <button class="btn-secondary" data-action="confirm-payment">I completed the bank payment</button>
         </div>`;
     } else if (ft === 'bank_transfer') {
@@ -610,10 +747,7 @@ const CheckoutUI = {
             <div class="bank-row"><span>Account:</span><strong>${paymentResult.account}</strong></div>
             <div class="bank-row"><span>Reference:</span><strong>${paymentResult.reference_id}</strong></div>
           </div>
-          <div class="total-display">
-            <span class="total-label">Total Amount:</span>
-            <div class="total-value">${selectedCountry.currencySymbol} ${total.toFixed(2)}</div>
-          </div>
+          ${this._subtotalBox(cart, selectedCountry)}
           <button class="btn-secondary" data-action="confirm-payment">I completed the transfer</button>
         </div>`;
     } else if (ft === 'card') {
@@ -624,7 +758,9 @@ const CheckoutUI = {
           <div class="result-details">
             <div class="result-row"><span>Auth. Code:</span><strong>${paymentResult.authorization_code}</strong></div>
             <div class="result-row"><span>NSU:</span><strong>${paymentResult.nsu}</strong></div>
-            <div class="result-row"><span>Amount:</span><strong>${selectedCountry.currencySymbol} ${total.toFixed(2)}</strong></div>
+            <div class="result-row"><span>Order Amount:</span><strong>${selectedCountry.currencySymbol} ${cart.subtotal.toFixed(2)}</strong></div>
+            <div class="result-row"><span>Customer Fee (${(selectedCountry.fee * 100).toFixed(2)}%):</span><strong>${selectedCountry.currencySymbol} ${fee.toFixed(2)}</strong></div>
+            <div class="result-row"><span>Total Charged:</span><strong>${selectedCountry.currencySymbol} ${total.toFixed(2)}</strong></div>
           </div>
           <button class="btn-primary" data-action="new-payment">New Payment</button>
         </div>`;

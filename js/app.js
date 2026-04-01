@@ -10,6 +10,7 @@ const App = {
     selectedCountry: null,    // country object from COUNTRIES[]
     selectedMethod: null,     // method object from PAYMENT_METHODS{}
     paymentResult: null,      // mock API response
+    countryPickerOpen: false, // mobile country picker overlay
     cart: {
       items: [
         { name: 'Gift Voucher',                qty: 2, price: 5.00,  total: 10.00 },
@@ -29,6 +30,7 @@ const App = {
   render() {
     CheckoutUI.renderLeft(this.state);
     CheckoutUI.renderRight(this.state);
+    CheckoutUI.renderCountryPicker(this.state);
 
     // Post-render hooks
     if (this.state.step === 'payment') {
@@ -46,7 +48,10 @@ const App = {
     }
 
     // Bind card number formatting after form renders
-    if (this.state.step === 'form') {
+    const ft = this.state.selectedMethod && this.state.selectedMethod.formType;
+    const cardOnDesktop = ft === 'card' && this.state.step === 'form';
+    const cardOnMobile  = ft === 'card' && this.state.step === 'select' && window.innerWidth <= 860;
+    if (cardOnDesktop || cardOnMobile) {
       setTimeout(() => this._bindCardInputs(), 50);
     }
   },
@@ -76,13 +81,24 @@ const App = {
         this.state.selectedCountry = country;
         this.state.selectedMethod = null;
         this.state.step = 'select';
-        // Update cart currency display
+        this.state.countryPickerOpen = false;
         this.render();
-        // Scroll to methods section
         setTimeout(() => {
           const ms = document.getElementById('methodsSection');
           if (ms) ms.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 100);
+        break;
+      }
+
+      case 'open-country-picker': {
+        this.state.countryPickerOpen = true;
+        this.render();
+        break;
+      }
+
+      case 'close-country-picker': {
+        this.state.countryPickerOpen = false;
+        this.render();
         break;
       }
 
@@ -92,14 +108,47 @@ const App = {
         const method = PAYMENT_METHODS[methodId];
         if (!method) return;
         this.state.selectedMethod = method;
-        this.render();
+        // Mobile + direct method: skip form entirely
+        if (window.innerWidth <= 860 && this._isDirectMethod(method)) {
+          this._processDirectPayment();
+        } else {
+          this.render();
+          setTimeout(() => {
+            const ps = document.getElementById('paymentSection');
+            if (ps) ps.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 100);
+        }
         break;
       }
 
       case 'continue': {
         if (!this.state.selectedMethod) return;
-        this.state.step = 'form';
+        // Desktop + direct method: skip form entirely
+        if (this._isDirectMethod(this.state.selectedMethod)) {
+          this._processDirectPayment();
+        } else {
+          this.state.step = 'form';
+          this.render();
+        }
+        break;
+      }
+
+      case 'expand-country': {
+        this.state.selectedCountry = null;
+        this.state.selectedMethod = null;
+        this.state.step = 'select';
         this.render();
+        break;
+      }
+
+      case 'expand-method': {
+        this.state.selectedMethod = null;
+        this.state.step = 'select';
+        this.render();
+        setTimeout(() => {
+          const ms = document.getElementById('methodsSection');
+          if (ms) ms.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
         break;
       }
 
@@ -143,16 +192,24 @@ const App = {
       const method = PAYMENT_METHODS[methodId];
       if (method) {
         this.state.selectedMethod = method;
-        // Update the Continue button state without full re-render
-        const btn = document.getElementById('btnContinue');
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove('disabled');
+        if (window.innerWidth <= 860) {
+          // Mobile: direct methods skip form; others show collapsible form
+          if (this._isDirectMethod(method)) {
+            this._processDirectPayment();
+          } else {
+            this.render();
+          }
+        } else {
+          // Desktop: update Continue button state without full re-render
+          const btn = document.getElementById('btnContinue');
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+          }
+          document.querySelectorAll('.method-row').forEach(r => {
+            r.classList.toggle('selected', r.dataset.method === methodId);
+          });
         }
-        // Highlight selected row
-        document.querySelectorAll('.method-row').forEach(r => {
-          r.classList.toggle('selected', r.dataset.method === methodId);
-        });
       }
     }
   },
@@ -267,12 +324,49 @@ const App = {
     CheckoutUI.showToast('Bank redirect complete. Please confirm your payment.', 'info');
   },
 
+  // ─── Direct Payment (no form needed — QR Code / Barcode methods) ──────────
+  _isDirectMethod(method) {
+    return method && ['pix', 'picpay', 'boleto', 'bank_transfer'].includes(method.formType);
+  },
+
+  _processDirectPayment() {
+    const payload = {
+      contract_id: 'DEMO_CONTRACT',
+      reference_id: 'POS-' + Date.now(),
+      notification_url: 'https://my.notification.url/callback/',
+      payment: {
+        amount: this.state.cart.subtotal,
+        currency: this.state.selectedCountry.currency,
+        country: this.state.selectedCountry.code,
+        method: this.state.selectedMethod.id
+      },
+      person: {}
+    };
+
+    this.state.step = 'processing';
+    this.render();
+
+    MockAPI.process(this.state.selectedMethod.id, payload)
+      .then(result => {
+        this.state.paymentResult = result;
+        this.state.step = 'payment';
+        this.render();
+      })
+      .catch(err => {
+        console.error('Mock API error:', err);
+        this.state.step = 'select';
+        this.render();
+        CheckoutUI.showToast('Payment processing failed. Please try again.', 'error');
+      });
+  },
+
   // ─── Reset ─────────────────────────────────────────────────────────────────
   _resetToStart() {
     this.state.step = 'select';
     this.state.selectedCountry = null;
     this.state.selectedMethod = null;
     this.state.paymentResult = null;
+    this.state.countryPickerOpen = false;
     this.render();
   }
 };
