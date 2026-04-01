@@ -663,7 +663,9 @@ const CheckoutUI = {
           <button class="btn-primary" data-action="copy" data-target="pixCodeField">Copy Code</button>
           <div class="auto-confirm-section">
             <div class="auto-confirm-loader">
-              ${this.icons.spinner}
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 100%"></div>
+              </div>
               <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
             </div>
             <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>
@@ -695,7 +697,9 @@ const CheckoutUI = {
           <button class="btn-primary" data-action="copy" data-target="codiCodeField">Copy Code</button>
           <div class="auto-confirm-section">
             <div class="auto-confirm-loader">
-              ${this.icons.spinner}
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 100%"></div>
+              </div>
               <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
             </div>
             <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>
@@ -727,7 +731,9 @@ const CheckoutUI = {
           <button class="btn-primary" data-action="copy" data-target="machCodeField">Copy Code</button>
           <div class="auto-confirm-section">
             <div class="auto-confirm-loader">
-              ${this.icons.spinner}
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 100%"></div>
+              </div>
               <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
             </div>
             <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>

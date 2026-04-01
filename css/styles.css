@@ -1340,12 +1340,23 @@ body::before {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  width: 100%;
   text-align: center;
 }
 
-.auto-confirm-loader .spinner {
-  width: 48px;
-  height: 48px;
+.progress-bar {
+  width: 100%;
+  max-width: 240px;
+  height: 4px;
+  background-color: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 2px;
 }
 
 .auto-confirm-text {

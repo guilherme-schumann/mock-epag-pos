@@ -375,24 +375,33 @@ const App = {
 // ─── Auto-Confirm Countdown ────────────────────────────────────────────────
 App._startAutoConfirmCountdown = function() {
   this._clearAutoConfirmCountdown();
-  let remaining = 10;
+  const startTime = Date.now();
+  const duration = 10000; // 10 seconds in ms
   const timerEl = document.getElementById('countdownTimer');
+  const progressFill = document.getElementById('progressFill');
 
-  if (timerEl) {
-    timerEl.textContent = remaining;
-  }
+  const update = () => {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, 10 - Math.floor(elapsed / 1000));
+    const percentage = Math.max(0, 100 - (elapsed / duration) * 100);
 
-  this.state.countdownInterval = setInterval(() => {
-    remaining--;
     if (timerEl) {
       timerEl.textContent = remaining;
     }
 
-    if (remaining <= 0) {
+    if (progressFill) {
+      progressFill.style.width = percentage + '%';
+    }
+
+    if (elapsed < duration) {
+      requestAnimationFrame(update);
+    } else {
       this._clearAutoConfirmCountdown();
       this._confirmPayment();
     }
-  }, 1000);
+  };
+
+  requestAnimationFrame(update);
 };
 
 App._clearAutoConfirmCountdown = function() {
