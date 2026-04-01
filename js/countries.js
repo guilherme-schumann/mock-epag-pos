@@ -11,7 +11,7 @@ const COUNTRIES = [
     currencySymbol: 'R$',
     taxLabel: 'CPF / CNPJ',
     taxPlaceholder: '000.000.000-00',
-    methods: ['BOLETO', 'PIX', 'CREDIT_CARD', 'PICPAY', 'DEBIT_CARD'],
+    methods: ['PIX'],
     fee: 0.0125
   },
   {
@@ -22,40 +22,7 @@ const COUNTRIES = [
     currencySymbol: 'MX$',
     taxLabel: 'RFC',
     taxPlaceholder: 'AAAA000000AAA',
-    methods: ['SPEI', 'PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PAYNET', 'TIENDAS_Y_FARMACIAS', 'OXXO'],
-    fee: 0.015
-  },
-  {
-    code: 'CO',
-    name: 'Colombia',
-    flag: 'assets/country-flags/Colombia.svg',
-    currency: 'COP',
-    currencySymbol: 'COP',
-    taxLabel: 'NIT / Cédula',
-    taxPlaceholder: '000000000',
-    methods: ['PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'NEQUI'],
-    fee: 0.02
-  },
-  {
-    code: 'EC',
-    name: 'Ecuador',
-    flag: 'assets/country-flags/Ecuador.svg',
-    currency: 'USD',
-    currencySymbol: '$',
-    taxLabel: 'Cédula / RUC',
-    taxPlaceholder: '0000000000',
-    methods: ['PAYCASH', 'CREDIT_CARD', 'BANK_TRANSFER', 'DEUNA'],
-    fee: 0.015
-  },
-  {
-    code: 'PE',
-    name: 'Peru',
-    flag: 'assets/country-flags/Peru.svg',
-    currency: 'PEN',
-    currencySymbol: 'S/',
-    taxLabel: 'DNI / RUC',
-    taxPlaceholder: '00000000',
-    methods: ['PAYCASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PAGO_EFECTIVO'],
+    methods: ['CODI'],
     fee: 0.015
   },
   {
@@ -63,10 +30,10 @@ const COUNTRIES = [
     name: 'Chile',
     flag: 'assets/country-flags/Chile.svg',
     currency: 'CLP',
-    currencySymbol: 'CLP',
+    currencySymbol: 'CLP$',
     taxLabel: 'RUT',
     taxPlaceholder: '00.000.000-0',
-    methods: ['PAYCASH', 'MACH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER'],
+    methods: ['MACH'],
     fee: 0.015
   }
 ];
@@ -186,11 +153,18 @@ const PAYMENT_METHODS = {
     formType: 'bank_redirect',
     cardBrands: []
   },
+  CODI: {
+    id: 'CODI',
+    name: 'CoDI',
+    icon: 'assets/payment-methods/CoDI.svg',
+    formType: 'codi',
+    cardBrands: []
+  },
   MACH: {
     id: 'MACH',
     name: 'Mach',
     icon: 'assets/payment-methods/Mach.svg',
-    formType: 'bank_redirect',
+    formType: 'mach',
     cardBrands: []
   }
 };

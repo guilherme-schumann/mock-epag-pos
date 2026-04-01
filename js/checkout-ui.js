@@ -308,27 +308,14 @@ const CheckoutUI = {
       : this._renderSelectStepDesktop(state);
   },
 
-  // Desktop: original flow — full country grid → methods list → Continue button
+  // Desktop: country selection only — clicking a country goes directly to payment
   _renderSelectStepDesktop(state) {
-    const { selectedCountry, selectedMethod } = state;
-    const hasMethod = !!selectedMethod;
     return `
       <div class="right-content">
         <div class="checkout-section">
           <h2 class="section-title">Country</h2>
-          <p class="section-subtitle">Select the payment method country:</p>
+          <p class="section-subtitle">Select your country to proceed with payment:</p>
           ${this.renderCountryGrid(state)}
-        </div>
-
-        <div class="checkout-section methods-section${selectedCountry ? '' : ' hidden'}" id="methodsSection">
-          <h2 class="section-title">Payment Methods</h2>
-          <p class="section-subtitle">Select the perfect payment method for you:</p>
-          ${this.renderMethodsList(state)}
-          <button class="btn-continue${hasMethod ? '' : ' disabled'}"
-                  id="btnContinue" data-action="continue"
-                  ${hasMethod ? '' : 'disabled'}>
-            Continue
-          </button>
         </div>
 
         <div class="checkout-footer">
@@ -340,36 +327,19 @@ const CheckoutUI = {
       </div>`;
   },
 
-  // Mobile: country via badge overlay; payment methods and form as collapsible steps
+  // Mobile: country via badge overlay; clicking a country goes directly to payment
   _renderSelectStepMobile(state) {
-    const { selectedCountry, selectedMethod } = state;
+    const { selectedCountry } = state;
 
-    let sections = '';
-
-    if (!selectedCountry) {
-      // No country yet — prompt to tap the badge
-      sections = `
-        <div class="mobile-country-prompt">
-          <p class="mobile-country-prompt-text">Tap <strong>Select Country</strong> above to get started.</p>
-        </div>`;
-    } else if (!selectedMethod) {
-      // Country selected — show payment methods
-      sections = `
-        <div class="checkout-section methods-section" id="methodsSection">
-          <h2 class="section-title">Payment Methods</h2>
-          <p class="section-subtitle">Select the perfect payment method for you:</p>
-          ${this.renderMethodsList(state)}
-        </div>`;
-    } else {
-      // Method selected — show only the payment form (no collapsed method header)
-      // User can change country/method via country-badge in the left panel header
-      sections = `
-        <div class="checkout-section payment-section" id="paymentSection">
-          <form id="paymentForm" class="payment-form" novalidate>
-            ${this._buildFormContent(state)}
-          </form>
-        </div>`;
-    }
+    const sections = !selectedCountry
+      ? `<div class="mobile-country-prompt">
+           <p class="mobile-country-prompt-text">Tap <strong>Select Country</strong> above to get started.</p>
+         </div>`
+      : `<div class="checkout-section">
+           <h2 class="section-title">Country</h2>
+           <p class="section-subtitle">Select your country to proceed with payment:</p>
+           ${this.renderCountryGrid(state)}
+         </div>`;
 
     return `
       <div class="right-content">
@@ -691,7 +661,77 @@ const CheckoutUI = {
             </div>
           </div>
           <button class="btn-primary" data-action="copy" data-target="pixCodeField">Copy Code</button>
-          <button class="btn-secondary" data-action="confirm-payment">I already paid</button>
+          <div class="auto-confirm-section">
+            <div class="auto-confirm-loader">
+              ${this.icons.spinner}
+              <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
+            </div>
+            <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>
+          </div>
+        </div>`;
+    } else if (ft === 'codi') {
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 30);
+      const expiryStr = expiry.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+                        ' - ' + expiry.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) + 'h';
+      content = `
+        <div class="payment-result-section">
+          <label class="form-label">QR Code:</label>
+          <div class="qr-container">
+            <canvas id="qrCanvas" width="220" height="220"></canvas>
+          </div>
+          <p class="validity-text">Valid until: <strong>${expiryStr}</strong></p>
+          ${subtotalHTML}
+          <div class="form-group">
+            <label class="form-label">CoDI Code:</label>
+            <div class="copy-field-wrap">
+              <input class="form-input copy-field" type="text" readonly
+                     value="${paymentResult.codi_code}" id="codiCodeField">
+              <button class="btn-copy" data-action="copy" data-target="codiCodeField" title="Copy">
+                ${this.icons.copy}
+              </button>
+            </div>
+          </div>
+          <button class="btn-primary" data-action="copy" data-target="codiCodeField">Copy Code</button>
+          <div class="auto-confirm-section">
+            <div class="auto-confirm-loader">
+              ${this.icons.spinner}
+              <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
+            </div>
+            <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>
+          </div>
+        </div>`;
+    } else if (ft === 'mach') {
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 30);
+      const expiryStr = expiry.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+                        ' - ' + expiry.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) + 'h';
+      content = `
+        <div class="payment-result-section">
+          <label class="form-label">QR Code:</label>
+          <div class="qr-container">
+            <canvas id="qrCanvas" width="220" height="220"></canvas>
+          </div>
+          <p class="validity-text">Valid until: <strong>${expiryStr}</strong></p>
+          ${subtotalHTML}
+          <div class="form-group">
+            <label class="form-label">Mach Code:</label>
+            <div class="copy-field-wrap">
+              <input class="form-input copy-field" type="text" readonly
+                     value="${paymentResult.mach_code}" id="machCodeField">
+              <button class="btn-copy" data-action="copy" data-target="machCodeField" title="Copy">
+                ${this.icons.copy}
+              </button>
+            </div>
+          </div>
+          <button class="btn-primary" data-action="copy" data-target="machCodeField">Copy Code</button>
+          <div class="auto-confirm-section">
+            <div class="auto-confirm-loader">
+              ${this.icons.spinner}
+              <p class="auto-confirm-text">Auto-confirms in <span id="countdownTimer">10</span>s  ·  waiting for payment…</p>
+            </div>
+            <button class="btn-secondary" data-action="confirm-payment">Simulate Payment Receipt</button>
+          </div>
         </div>`;
     } else if (ft === 'boleto') {
       content = `

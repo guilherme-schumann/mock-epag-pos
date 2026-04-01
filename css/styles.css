@@ -1323,3 +1323,39 @@ body::before {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* ─── Auto-Confirm Countdown ────────────────────────────────────── */
+.auto-confirm-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.auto-confirm-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.auto-confirm-loader .spinner {
+  width: 48px;
+  height: 48px;
+}
+
+.auto-confirm-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.auto-confirm-text span {
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}

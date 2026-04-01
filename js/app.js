@@ -11,6 +11,7 @@ const App = {
     selectedMethod: null,     // method object from PAYMENT_METHODS{}
     paymentResult: null,      // mock API response
     countryPickerOpen: false, // mobile country picker overlay
+    countdownInterval: null,  // countdown timer interval ID
     cart: {
       items: [
         { name: 'Gift Voucher',                qty: 2, price: 5.00,  total: 10.00 },
@@ -35,12 +36,14 @@ const App = {
     // Post-render hooks
     if (this.state.step === 'payment') {
       const ft = this.state.selectedMethod && this.state.selectedMethod.formType;
-      if (ft === 'pix' || ft === 'picpay') {
+      if (ft === 'pix' || ft === 'picpay' || ft === 'codi' || ft === 'mach') {
         // Seed QR from payment token for consistency
         const seed = this.state.paymentResult
           ? parseInt(this.state.paymentResult.payment_token.replace(/-/g, '').substr(0, 8), 16)
           : 9999;
         setTimeout(() => CheckoutUI.drawQRCode('qrCanvas', seed), 50);
+        // Start countdown for auto-confirmation (only for QR-based methods)
+        setTimeout(() => this._startAutoConfirmCountdown(), 50);
       }
       if (ft === 'bank_redirect') {
         setTimeout(() => this._handleBankRedirect(), 3000);
@@ -79,14 +82,9 @@ const App = {
         const country = COUNTRIES.find(c => c.code === code);
         if (!country) return;
         this.state.selectedCountry = country;
-        this.state.selectedMethod = null;
-        this.state.step = 'select';
+        this.state.selectedMethod = PAYMENT_METHODS[country.methods[0]];
         this.state.countryPickerOpen = false;
-        this.render();
-        setTimeout(() => {
-          const ms = document.getElementById('methodsSection');
-          if (ms) ms.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
+        this._processDirectPayment();
         break;
       }
 
@@ -134,6 +132,7 @@ const App = {
       }
 
       case 'expand-country': {
+        this._clearAutoConfirmCountdown();
         this.state.selectedCountry = null;
         this.state.selectedMethod = null;
         this.state.step = 'select';
@@ -142,6 +141,7 @@ const App = {
       }
 
       case 'expand-method': {
+        this._clearAutoConfirmCountdown();
         this.state.selectedMethod = null;
         this.state.step = 'select';
         this.render();
@@ -326,7 +326,7 @@ const App = {
 
   // ─── Direct Payment (no form needed — QR Code / Barcode methods) ──────────
   _isDirectMethod(method) {
-    return method && ['pix', 'picpay', 'boleto', 'bank_transfer'].includes(method.formType);
+    return method && ['pix', 'picpay', 'boleto', 'bank_transfer', 'codi', 'mach'].includes(method.formType);
   },
 
   _processDirectPayment() {
@@ -362,12 +362,43 @@ const App = {
 
   // ─── Reset ─────────────────────────────────────────────────────────────────
   _resetToStart() {
+    this._clearAutoConfirmCountdown();
     this.state.step = 'select';
     this.state.selectedCountry = null;
     this.state.selectedMethod = null;
     this.state.paymentResult = null;
     this.state.countryPickerOpen = false;
     this.render();
+  }
+};
+
+// ─── Auto-Confirm Countdown ────────────────────────────────────────────────
+App._startAutoConfirmCountdown = function() {
+  this._clearAutoConfirmCountdown();
+  let remaining = 10;
+  const timerEl = document.getElementById('countdownTimer');
+
+  if (timerEl) {
+    timerEl.textContent = remaining;
+  }
+
+  this.state.countdownInterval = setInterval(() => {
+    remaining--;
+    if (timerEl) {
+      timerEl.textContent = remaining;
+    }
+
+    if (remaining <= 0) {
+      this._clearAutoConfirmCountdown();
+      this._confirmPayment();
+    }
+  }, 1000);
+};
+
+App._clearAutoConfirmCountdown = function() {
+  if (this.state.countdownInterval) {
+    clearInterval(this.state.countdownInterval);
+    this.state.countdownInterval = null;
   }
 };
 

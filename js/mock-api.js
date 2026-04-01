@@ -126,6 +126,40 @@ const MockAPI = {
     };
   },
 
+  // POST /codi/simple
+  async processCoDI(payload) {
+    await this._delay(1200, 1800);
+    return {
+      transaction_status: 'PROCESSING',
+      payment_token: this._token(),
+      reference_id: this._ref(),
+      codi_code: 'CODI' + Math.random().toString(36).substr(2, 16).toUpperCase() +
+                 payload.payment.amount.toFixed(2).replace('.', '') + 'MX',
+      totals: {
+        amount: payload.payment.amount,
+        currency: payload.payment.currency,
+        fee: (payload.payment.amount * 0.015).toFixed(2)
+      }
+    };
+  },
+
+  // POST /mach/simple
+  async processMACH(payload) {
+    await this._delay(1200, 1800);
+    return {
+      transaction_status: 'PROCESSING',
+      payment_token: this._token(),
+      reference_id: this._ref(),
+      mach_code: 'MACH' + Math.random().toString(36).substr(2, 16).toUpperCase() +
+                 payload.payment.amount.toFixed(2).replace('.', '') + 'CL',
+      totals: {
+        amount: payload.payment.amount,
+        currency: payload.payment.currency,
+        fee: (payload.payment.amount * 0.015).toFixed(2)
+      }
+    };
+  },
+
   // Bank Redirect (SPEI / PSE)
   async processBankRedirect(payload) {
     await this._delay(1500, 2000);
@@ -164,11 +198,12 @@ const MockAPI = {
       case 'PAYNET':
       case 'TIENDAS_Y_FARMACIAS':
       case 'PAGO_EFECTIVO': return this.processCashStore(payload);
+      case 'CODI':          return this.processCoDI(payload);
+      case 'MACH':          return this.processMACH(payload);
       case 'SPEI':
       case 'PSE':
       case 'NEQUI':
-      case 'DEUNA':
-      case 'MACH':          return this.processBankRedirect(payload);
+      case 'DEUNA':         return this.processBankRedirect(payload);
       case 'BANK_TRANSFER': return this.processBankTransfer(payload);
       default:              return this.processCashStore(payload);
     }
