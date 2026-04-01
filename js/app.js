@@ -36,14 +36,21 @@ const App = {
     // Post-render hooks
     if (this.state.step === 'payment') {
       const ft = this.state.selectedMethod && this.state.selectedMethod.formType;
-      if (ft === 'pix' || ft === 'picpay' || ft === 'codi' || ft === 'mach') {
+      if (ft === 'pix' || ft === 'codi' || ft === 'mach') {
         // Seed QR from payment token for consistency
         const seed = this.state.paymentResult
           ? parseInt(this.state.paymentResult.payment_token.replace(/-/g, '').substr(0, 8), 16)
           : 9999;
         setTimeout(() => CheckoutUI.drawQRCode('qrCanvas', seed), 50);
-        // Start countdown for auto-confirmation (only for QR-based methods)
+        // Start countdown for auto-confirmation (only for QR-based methods with auto-confirm)
         setTimeout(() => this._startAutoConfirmCountdown(), 50);
+      }
+      if (ft === 'picpay') {
+        // PicPay also needs QR but without auto-confirm
+        const seed = this.state.paymentResult
+          ? parseInt(this.state.paymentResult.payment_token.replace(/-/g, '').substr(0, 8), 16)
+          : 9999;
+        setTimeout(() => CheckoutUI.drawQRCode('qrCanvas', seed), 50);
       }
       if (ft === 'bank_redirect') {
         setTimeout(() => this._handleBankRedirect(), 3000);
@@ -81,6 +88,7 @@ const App = {
         const code = el.dataset.code;
         const country = COUNTRIES.find(c => c.code === code);
         if (!country) return;
+        this._clearAutoConfirmCountdown();
         this.state.selectedCountry = country;
         this.state.selectedMethod = PAYMENT_METHODS[country.methods[0]];
         this.state.countryPickerOpen = false;
