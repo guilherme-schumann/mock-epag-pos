@@ -108,7 +108,7 @@ const CheckoutUI = {
   // ─── Left Panel ────────────────────────────────────────────────────────────
 
   renderLeft(state) {
-    const { step, country, method, cart, selectedCountry } = state;
+    const { step, country, method, cart, selectedCountry, selectedMethod } = state;
     const inFormStep = ['form', 'processing', 'payment', 'confirm'].includes(step);
     const el = document.getElementById('panelLeft');
     const isMobile = window.innerWidth <= 860;
@@ -125,8 +125,21 @@ const CheckoutUI = {
         ? `<div class="country-badge">${selectedCountry.name} <span class="flag">${this.renderCountryFlag(selectedCountry, 'country-badge-flag')}</span></div>`
         : '';
 
-    if (inFormStep && selectedCountry) {
-      // Summary mode: show selections history
+    // Mobile: When method is selected and showing input form/payment, hide cart details
+    // Show only minimal header with country badge for navigation
+    const mobileInPaymentFlow = isMobile && selectedMethod && (inFormStep || (step === 'select' && selectedMethod));
+    
+    if (mobileInPaymentFlow) {
+      // Mobile payment flow: minimal header only (no cart, no order amount)
+      el.innerHTML = `
+        <div class="left-header left-header-minimal">
+          <div class="epag-logo">
+            <img src="assets/logo/epag-logo.svg" alt="ePag" class="epag-logo-image" />
+          </div>
+          ${countryBadge}
+        </div>`;
+    } else if (inFormStep && selectedCountry) {
+      // Desktop: Summary mode - show selections history
       el.innerHTML = `
         <div class="left-header">
           <div class="epag-logo">
@@ -348,9 +361,9 @@ const CheckoutUI = {
           ${this.renderMethodsList(state)}
         </div>`;
     } else {
-      // Method selected — collapsed method + payment form
+      // Method selected — show only the payment form (no collapsed method header)
+      // User can change country/method via country-badge in the left panel header
       sections = `
-        ${this._renderCollapsedMethod(selectedMethod)}
         <div class="checkout-section payment-section" id="paymentSection">
           <form id="paymentForm" class="payment-form" novalidate>
             ${this._buildFormContent(state)}
@@ -480,8 +493,10 @@ const CheckoutUI = {
     const fee = cart.subtotal * selectedCountry.fee;
     const total = cart.subtotal + fee;
     const ft = selectedMethod.formType;
+    const isMobile = window.innerWidth <= 860;
 
-    const subtotalHTML = this._subtotalBox(cart, selectedCountry);
+    // On mobile, hide subtotal box (cart details already hidden in left panel)
+    const subtotalHTML = isMobile ? '' : this._subtotalBox(cart, selectedCountry);
 
     if (ft === 'pix' || ft === 'boleto' || ft === 'picpay') {
       return `
@@ -647,6 +662,9 @@ const CheckoutUI = {
     const fee = cart.subtotal * selectedCountry.fee;
     const total = cart.subtotal + fee;
     const ft = selectedMethod.formType;
+    const isMobile = window.innerWidth <= 860;
+    // On mobile, hide subtotal box (cart details already hidden in left panel)
+    const subtotalHTML = isMobile ? '' : this._subtotalBox(cart, selectedCountry);
     let content = '';
 
     if (ft === 'pix') {
@@ -661,7 +679,7 @@ const CheckoutUI = {
             <canvas id="qrCanvas" width="220" height="220"></canvas>
           </div>
           <p class="validity-text">Valid until: <strong>${expiryStr}</strong></p>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <div class="form-group">
             <label class="form-label">PIX Code:</label>
             <div class="copy-field-wrap">
@@ -684,7 +702,7 @@ const CheckoutUI = {
             </div>
             <p class="boleto-due">Due date: <strong>${paymentResult.due_date}</strong></p>
           </div>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <div class="form-group">
             <label class="form-label">Barcode:</label>
             <div class="copy-field-wrap">
@@ -705,7 +723,7 @@ const CheckoutUI = {
           <div class="qr-container">
             <canvas id="qrCanvas" width="220" height="220"></canvas>
           </div>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <button class="btn-secondary" data-action="confirm-payment">I already paid</button>
         </div>`;
     } else if (ft === 'cash_store') {
@@ -714,7 +732,7 @@ const CheckoutUI = {
         <div class="payment-result-section">
           <p class="instruction-text">Go to a ${storeName} and provide this reference number:</p>
           <div class="reference-display">${paymentResult.cash_reference}</div>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <div class="form-group">
             <div class="copy-field-wrap">
               <input class="form-input copy-field" type="text" readonly
@@ -733,7 +751,7 @@ const CheckoutUI = {
           ${this.icons.spinner}
           <p class="processing-text">Redirecting to bank...</p>
           <p class="processing-subtext">You are being redirected to your bank's secure payment portal.</p>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <button class="btn-secondary" data-action="confirm-payment">I completed the bank payment</button>
         </div>`;
     } else if (ft === 'bank_transfer') {
@@ -747,7 +765,7 @@ const CheckoutUI = {
             <div class="bank-row"><span>Account:</span><strong>${paymentResult.account}</strong></div>
             <div class="bank-row"><span>Reference:</span><strong>${paymentResult.reference_id}</strong></div>
           </div>
-          ${this._subtotalBox(cart, selectedCountry)}
+          ${subtotalHTML}
           <button class="btn-secondary" data-action="confirm-payment">I completed the transfer</button>
         </div>`;
     } else if (ft === 'card') {

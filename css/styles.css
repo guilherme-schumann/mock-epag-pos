@@ -1280,6 +1280,15 @@ body::before {
   .left-header { padding: 20px 20px 12px; }
   .left-footer { padding: 12px 20px 16px; }
 
+  /* Minimal header for mobile payment flow - hide cart/order amount */
+  .left-header-minimal {
+    padding: 16px 20px;
+    border-bottom: none;
+  }
+  .panel-left:has(.left-header-minimal) {
+    border-bottom: 1px solid var(--border);
+  }
+
   .order-value { font-size: 26px; }
   .order-currency { font-size: 18px; }
 
